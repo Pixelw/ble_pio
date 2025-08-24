@@ -8,7 +8,7 @@
 //
 class BluetoothServer {
     bool btIsOn = false;
-    bool btIsConnected =false;
+    bool btIsConnected = false;
     int msgPos = 0;
     int length = 0;
 
@@ -16,7 +16,7 @@ class BluetoothServer {
 
     bool available();
 
-    void write(const char* value);
+    void write(const char *value);
 
     int read();
 
@@ -31,14 +31,14 @@ bool BluetoothServer::available() {
     return btIsOn ? btClient.available() : false;
 }
 
-void BluetoothServer::write(const char* value) {
+void BluetoothServer::write(const char *value) {
     if (btIsOn) {
         btClient.write(reinterpret_cast<const uint8_t *>(value), strlen(value));
     }
 }
 
 int BluetoothServer::read() {
-    return btIsOn? btClient.read() : -1;
+    return btIsOn ? btClient.read() : -1;
 }
 
 void BluetoothServer::flush() {
@@ -52,14 +52,13 @@ bool BluetoothServer::btSetup() {
     btIsOn = btClient.begin(devName);
     if (btIsOn) {
         Serial.println("Bluetooth is on");
-    }else {
+    } else {
         Serial.println("Bluetooth is off");
     }
 
     btIsConnected = false;
 
     return btIsOn;
-
 }
 
 bool BluetoothServer::loop() {
@@ -71,7 +70,7 @@ bool BluetoothServer::loop() {
         btIsConnected = !btIsConnected;
         if (btIsConnected) {
             Serial.println("Bluetooth is connected");
-        }else {
+        } else {
             Serial.println("Bluetooth is disconnected");
         }
     }
@@ -91,8 +90,8 @@ bool BluetoothServer::loop() {
     while (available()) {
         int read = btClient.read();
         Buff__bufArr[Buff__bufInd++] = read;
-        Serial.printf("0x%x ,",static_cast<byte>(read));
-        if(Buff__bufInd % 16 == 0) {
+        Serial.printf("0x%x ,", static_cast<byte>(read));
+        if (Buff__bufInd % 16 == 0) {
             Serial.println();
         }
     }
@@ -100,7 +99,7 @@ bool BluetoothServer::loop() {
 
     // get epd type from packet
     if (Buff__bufArr[0] == 'I') {
-        length = 0 ;
+        length = 0;
 
 
         EPD_dispIndex = Buff__bufArr[1];
@@ -111,16 +110,12 @@ bool BluetoothServer::loop() {
 
         Buff__bufInd = 0;
         flush();
-    }else if (Buff__bufArr[0] == 'L') {
+    } else if (Buff__bufArr[0] == 'L') {
         Serial.print("<<<LOAD");
         int dataSize = Buff__getWord(1);
         length += dataSize;
 
         if (Buff__bufInd < dataSize || length != Buff__getN3(3)) {
-
         }
     }
-
-
-
 }
