@@ -16,7 +16,7 @@
   *           void EPD_Reset();
   *           void EPD_dispInit();
   *           
-  *          varualbes:
+  *          variables:
   *           EPD_dispLoad;                - pointer on current loading function
   *           EPD_dispIndex;               - index of current e-Paper
   *           EPD_dispInfo EPD_dispMass[]; - array of e-Paper properties
