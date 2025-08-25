@@ -8,6 +8,7 @@
   *          This file provides firmware functions:
   *           + Sending web page of the tool to a client's browser
   *           + Uploading images from client part by part
+  * @deprecated replaced by BluetoothServer.cpp
   *
   ******************************************************************************
   */ 

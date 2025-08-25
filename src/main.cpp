@@ -13,9 +13,11 @@
 */
 
 /* Includes ------------------------------------------------------------------*/
-#include <Arduino.h>
-#include "srvr.h" // Server functions
+#include <Arduino.h>// Server functions
 
+#include "BluetoothServer.h"
+
+BluetoothServer BtServer;
 /* Entry point ----------------------------------------------------------------*/
 void setup()
 {
@@ -26,10 +28,7 @@ void setup()
     Serial.println("Serial is on");
 
     // Bluetooth initialization
-    Srvr__btSetup();
-
-    // SPI initialization
-    EPD_initSPI();
+    BtServer.btSetup();
 
     // Initialization is complete
     Serial.print("\r\nOk!\r\n");
@@ -38,5 +37,5 @@ void setup()
 /* The main loop -------------------------------------------------------------*/
 void loop()
 {
-    Srvr__loop();
+    BtServer.loop();
 }

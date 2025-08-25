@@ -11,7 +11,8 @@
   *
   ******************************************************************************
   */ 
-
+#ifndef BUFF_H
+#define BUFF_H
 /* Size, current position index and byte array of the buffer -----------------*/
 #define Buff__SIZE 2050
 int     Buff__bufInd;
@@ -54,3 +55,4 @@ int Buff__signature(int index, char*str)
     // Otherwise return true
     return true;
 }
+#endif

@@ -1,31 +1,7 @@
-#include <BluetoothSerial.h>
+#include "BluetoothServer.h"
 
 #include "buff.h"
-#include "buff.h"       // POST request data accumulator
-#include "epd.h"        // e-Paper driver
-//
-// Created by carl- on 25/8/24.
-//
-class BluetoothServer {
-    bool btIsOn = false;
-    bool btIsConnected = false;
-    int msgPos = 0;
-    int length = 0;
-
-    BluetoothSerial btClient;
-
-    bool available();
-
-    void write(const char *value);
-
-    int read();
-
-    void flush();
-
-    bool btSetup();
-
-    bool loop();
-};
+#include "epd.h"
 
 bool BluetoothServer::available() {
     return btIsOn ? btClient.available() : false;
@@ -51,12 +27,15 @@ bool BluetoothServer::btSetup() {
     String devName("Inkintosh32");
     btIsOn = btClient.begin(devName);
     if (btIsOn) {
-        Serial.println("Bluetooth is on");
+        Serial.println("Bluetooth server is on");
     } else {
-        Serial.println("Bluetooth is off");
+        Serial.println("Bluetooth server is off");
     }
 
     btIsConnected = false;
+
+    // SPI initialization
+    EPD_initSPI();
 
     return btIsOn;
 }
@@ -75,18 +54,21 @@ bool BluetoothServer::loop() {
         }
     }
 
-    if (btIsConnected) {
+    // Exit if there is no bluetooth connection
+    if (!btIsConnected) {
         return false;
     }
 
     // Waiting the client is ready to send data
-    while (btClient.available()) {
+    while (!btClient.available()) {
         delay(10);
     }
 
     // Set buffer's index to zero
     // It means the buffer is empty initially
+    Buff__bufInd = 0;
 
+    // While the stream of 'client' has some data do...
     while (available()) {
         int read = btClient.read();
         Buff__bufArr[Buff__bufInd++] = read;
@@ -97,11 +79,10 @@ bool BluetoothServer::loop() {
     }
     Serial.println();
 
+    const char command = Buff__bufArr[0];
     // get epd type from packet
-    if (Buff__bufArr[0] == 'I') {
+    if (command == 'I') {
         length = 0;
-
-
         EPD_dispIndex = Buff__bufArr[1];
 
         Serial.printf("<<<EPD %s", EPD_dispMass[EPD_dispIndex].title);
@@ -110,12 +91,71 @@ bool BluetoothServer::loop() {
 
         Buff__bufInd = 0;
         flush();
-    } else if (Buff__bufArr[0] == 'L') {
+    } else if (command == 'L') {
         Serial.print("<<<LOAD");
-        int dataSize = Buff__getWord(1);
+        const int dataSize = Buff__getWord(1);
         length += dataSize;
 
         if (Buff__bufInd < dataSize || length != Buff__getN3(3)) {
+            Buff__bufInd = 0;
+            flush();
+
+            Serial.print(" - failed!>>>");
+            write("Error!");
+            return true;
         }
+
+        // Load data into the e-Paper
+        // if there is loading function for current channel (black or red)
+        if (EPD_dispLoad != 0) {
+            EPD_dispLoad();
+        }
+
+        Buff__bufInd = 0;
+        flush();
+    } else if (command == 'N') {
+        // Initialize next channel
+        // Print log message: next data channel
+        Serial.print("<<<NEXT");
+
+        // Instruction code for writing data into
+        // e-Paper's memory
+        int code = EPD_dispMass[EPD_dispIndex].next;
+        if (EPD_dispIndex == 34) {
+            if (flag == 0)
+                code = 0x26;
+            else
+                code = 0x13;
+        }
+
+        EPD_invert = EPD_dispIndex == 8;
+
+        if (code != -1) {
+            // Print log message: instruction code
+            Serial.printf(" %d", code);
+
+            // Do the selection of the next data channel
+            EPD_SendCommand(code);
+            delay(2);
+        }
+
+        // Set up the function for loading chosen channel's data
+        EPD_dispLoad = EPD_dispMass[EPD_dispIndex].chRd;
+
+        Buff__bufInd = 0;
+        flush();
+    } else if (command == 'S') {
+        EPD_dispMass[EPD_dispIndex].show();
+
+        Buff__bufInd = 0;
+        flush();
+
+        Serial.printf("<<<SHOW");
     }
+
+    write("Ok!");
+    delay(1);
+
+    Serial.print(">>>");
+    return true;
 }
